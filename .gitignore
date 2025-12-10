@@ -1,0 +1,35 @@
+# Ignorar archivos de log
+*.log
+
+# Ignorar archivos de sistema de MacOS
+.DS_Store
+
+# Ignorar directorios de node_modules
+env_impactos/
+json_s3/
+results/
+raw_txt/
+
+# Ignorar archivos compilados de Java
+*.class
+
+# Ignorar archivos de configuración de entorno
+.env
+
+# Ignorar directorios de dependencias de Python
+__pycache__/
+*/__pycache__/
+*.pyc
+
+
+# LaTex files 
+*.aux
+*.lof
+*.log
+*.nav
+*.snm
+*.gz
+*.vrb
+*.fls
+*.out
+*.toc

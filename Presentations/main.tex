@@ -1,0 +1,554 @@
+\documentclass[11pt]{beamer}
+\usetheme{Madrid}
+\usepackage{xcolor}
+
+% Definir tu color rojo personalizado
+\definecolor{myred}{RGB}{130,10,17}
+\usecolortheme[named=myred]{structure}
+\setbeamercolor{frametitle}{fg=myred, fg=white}
+\setbeamercolor{block title}{bg=myred, fg=white}
+\setbeamercolor{block body}{bg=myred!10, fg=black}
+\usefonttheme{serif}
+
+\usepackage[spanish]{babel}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{csquotes}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{float} % Para posicionar figuras
+
+\DeclareMathOperator{\sen}{sen}
+\DeclareMathOperator{\tg}{tg}
+
+\setbeamertemplate{caption}[numbered]	
+\author[Autor]{Autor \\ Noé Camacho}
+\title{The Implied Volatility Surface}
+\newcommand{\email}{email\\ camachor043@gmail.com}
+\setbeamertemplate{navigation symbols}{} 
+\logo{\includegraphics[scale=0.05]{imagens/logo_uni.png}} 
+\institute[]{UNIVERSIDAD NACIONAL DE INGENIERÍA \par \textit{Máster en ciencias e ingeniería estadística}} 
+\date{\today} 
+
+% ---------------------------------------------------------
+% Seleccione un estilo de referencia
+\bibliographystyle{apalike}
+% ---------------------------------------------------------
+
+\begin{document}
+
+\begin{frame}
+\titlepage
+\end{frame}
+
+\begin{frame}{Contenido}
+\tableofcontents 
+\end{frame}
+
+
+% Eliminar el texto "Section <n>" de la portada de sección
+\setbeamertemplate{section page}{
+  \begin{centering}
+    \begin{beamercolorbox}[sep=12pt,center,rounded=true,shadow=true]{section title}
+      \usebeamerfont{section title}\insertsection
+    \end{beamercolorbox}
+  \end{centering}
+}
+
+% Ahora, cada vez que empiece sección, insertamos esa portada limpia
+\AtBeginSection[]{
+  \begin{frame}[plain]  % plain quita márgenes extra
+    \sectionpage
+  \end{frame}
+}
+
+
+
+% DIAPO PREVIA A CADA SUBSECCIÓN
+\AtBeginSubsection[]{
+  \begin{frame}[plain]
+    % Título: nombre de la sección actual
+    \begin{beamercolorbox}[sep=12pt,center,rounded=true,shadow=true]{section title}
+      \usebeamerfont{section title}\insertsection
+    \end{beamercolorbox}
+    \vspace{1em}
+    % Subtítulo: nombre de la subsección actual
+    \begin{beamercolorbox}[sep=8pt,center,rounded=true,shadow=true]{subsection title}
+      \usebeamerfont{subsection title}\insertsubsection
+    \end{beamercolorbox}
+  \end{frame}
+}
+
+
+ 
+% =========================
+% SECTION: Heston Model Basics
+% =========================
+\section{Heston Model Basics}
+
+\begin{frame}{SDEs y propiedades básicas}
+\small
+\textbf{Dinámica en log-precio y varianza:}
+\[
+\begin{aligned}
+d\ln X_t &= -\tfrac12 V_t\,dt + \sqrt{V_t}\,dW_t^{X},\\
+dV_t &= \kappa(\theta - V_t)\,dt + \varepsilon \sqrt{V_t}\,dW_t^{V},\qquad
+\langle dW_t^{X},dW_t^{V}\rangle=\rho\,dt.
+\end{aligned}
+\]
+
+\end{frame}
+
+
+
+
+\section{Simulación Numérica}
+
+% -------------------------
+% Path Simulation
+% -------------------------
+\begin{frame}{Path Simulation}
+\small
+Dada una partición \(0=t_0<t_1<\dots<t_N=T\) con paso \(\Delta_i=t_{i+1}-t_i\), la simulación por pasos consiste en generar
+\((X_{t_{i+1}},V_{t_{i+1}})\) condicional en \((X_{t_i},V_{t_i})\).
+\medskip
+
+\end{frame}
+
+
+\subsection{Monte Carlo}
+
+% --- Frame 1: Monte Carlo: lema y estimador ---
+\begin{frame}{Estimador Monte Carlo}
+\textbf{Lema.} Sean \(X_1,\dots,X_n \overset{i.i.d.}{\sim} \mathcal L(X)\) y \(h:\mathbb R\to\mathbb R\) Borel.
+Entonces \(h(X_1),\dots,h(X_n)\) son i.i.d.
+
+\[
+\mu := \mathbb E[h(X)], 
+\qquad 
+\widehat\mu_n := \frac1n\sum_{i=1}^n h(X_i)
+\]
+\[
+\mathbb E[\widehat\mu_n]=\mu
+\quad\text{y}\quad
+\widehat\mu_n \xrightarrow{a.s.} \mu
+\]
+
+\medskip
+\textbf{Ejemplo (precio call):} 
+\[
+C = e^{-rT}\,\mathbb E[(S_T-K)^+]
+\;\approx\;
+\widehat C_n = e^{-rT}\,\frac1n\sum_{i=1}^n (S_T^{(i)}-K)^+ .
+\]
+\end{frame}
+
+% --- Frame 2: Precisión e IC + reducción de varianza ---
+\begin{frame}{IC}
+Sea \(\sigma^2 := \mathrm{Var}(h(X))\).
+\[
+\sqrt{n}\,\frac{\widehat\mu_n-\mu}{\sigma}\;\xrightarrow{d}\;\mathcal N(0,1),
+\qquad
+\mathrm{SE}(\widehat\mu_n)=\frac{\sigma}{\sqrt n}.
+\]
+
+\[
+\mu \in \Big(
+\widehat\mu_n - z_{\alpha/2}\tfrac{\widehat\sigma}{\sqrt n}\;,\;
+\widehat\mu_n + z_{\alpha/2}\tfrac{\widehat\sigma}{\sqrt n}
+\Big)
+\]
+
+\medskip
+error \(=O(n^{-1/2})\). Mejorar vía \(\sigma^2\):
+\[
+\begin{aligned}
+&\text{Antitéticos: } (Z,-Z) \\
+\end{aligned}
+\]
+\end{frame}
+
+
+\begin{frame}{Reducción de varianza: variables antitéticas}
+Sean dos muestras i.i.d. y correlacionadas \(Y^{1},Y^{2}\) con \(\mathrm{cov}(Y^{1}_{i},Y^{2}_{j})=\delta_{ij}\,\mathrm{cov}(Y^{1}_{i},Y^{2}_{i})\).
+\[
+\hat\theta_{\mathrm{AV}}=\frac{\overline{Y}^{\,1}+\overline{Y}^{\,2}}{2}
+\qquad\Rightarrow\qquad
+\mathbb{E}[\hat\theta_{\mathrm{AV}}]=\theta
+\]
+\[
+\mathrm{var}(\hat\theta_{\mathrm{AV}})
+=\tfrac14\,\mathrm{var}(\overline{Y}^{\,1})
++\tfrac14\,\mathrm{var}(\overline{Y}^{\,2})
++\tfrac12\,\mathrm{cov}(\overline{Y}^{\,1},\overline{Y}^{\,2})
+\]
+\[
+\Downarrow\quad \text{mejora si } \rho=\mathrm{corr}(\overline{Y}^{\,1},\overline{Y}^{\,2})<0
+\]
+Construcción típica: si \(Y^{1}=g(U)\) con \(U\sim\mathrm{Unif}[0,1]\),
+\[
+Y^{2}=g(1-U)\quad\Rightarrow\quad \rho<0 \ \text{(suele reducir varianza)}.
+\]
+\end{frame}
+
+\subsection{Esquema de Euler}
+
+\begin{frame}{Aproximación de Euler–Maruyama}
+\small
+Sea el EDE de Itô
+\[
+dX_t = a(t,X_t)\,dt + b(t,X_t)\,dW_t,\qquad t\in[t_0,T],\quad X_{t_0}=x_0,
+\]
+con malla uniforme \(t_n=t_0+n\Delta t\) (\(n=0,\dots,N\), \(\Delta t=\dfrac{T-t_0}{N}\)) y incrementos brownianos \(\Delta W_n := W_{t_{n+1}}-W_{t_n}\sim \mathcal N(0,\Delta t)\) i.i.d.
+
+\medskip
+El proceso aproximante \(Y_n \approx X_{t_n}\) se define por
+\[
+\boxed{\;
+Y_{n+1} \;=\; Y_n \;+\; a(t_n,Y_n)\,\Delta t \;+\; b(t_n,Y_n)\,\Delta W_n,
+\qquad Y_0=x_0. \;}
+\]
+
+
+\end{frame}
+
+
+% =========================
+% Heston: Euler (full truncation, LKD)
+% =========================
+\begin{frame}{Heston: Euler–Maruyama}
+Sea:
+\[
+\begin{aligned}
+\ln \widehat X_{t+\Delta} &= \ln \widehat X_t \;+\; \big(r-\tfrac12 \widehat V_t^{+}\big)\Delta \;+\; \sqrt{\widehat V_t^{+}}\; \Delta W_X,\\[2pt]
+\widehat V_{t+\Delta}     &= \widehat V_t \;+\; \kappa(\theta-\widehat V_t^{+})\,\Delta \;+\; \varepsilon \sqrt{\widehat V_t^{+}}\; \Delta W_V,\\[2pt]
+&\quad \widehat V_t^{+}=\max(\widehat V_t,0),\qquad \mathrm{corr}(\Delta W_X,\Delta W_V)=\rho,
+\end{aligned}
+\]
+\small con incrementos brownianos \(\Delta W_\bullet=\sqrt{\Delta}\,Z_\bullet\).
+\vspace{0.35em}
+
+\textbf{Normales correlacionadas:}
+\[
+Z_V=\Phi^{-1}(U_1),\qquad
+Z_X=\rho\,Z_V+\sqrt{1-\rho^2}\,\Phi^{-1}(U_2),
+\]
+\small \(U_1,U_2\sim \mathcal U(0,1)\) independientes; \(\Phi^{-1}\) es la inversa de la CDF normal estándar.\medskip
+
+\end{frame}
+\begin{frame}{Heston: Euler–Maruyama}
+\small
+\textbf{Truncación de Itô–Taylor (lo que se ignora):} este esquema es el \emph{orden 1} (débil) de Itô–Taylor, se descartan los términos grises. 
+\[
+Y_{t+\Delta}=Y_t+a\,\Delta+b\,\Delta W \;\color{gray}{+\;\tfrac12\,b\,\partial_y b\,\big((\Delta W)^2-\Delta\big)\;+\;\sum_{i\neq j}L_i b_j\,J_{ij}\;+\;O(\Delta^{3/2})},
+\]
+Para Heston \(dV_t=\kappa(\theta-V_t)dt+\varepsilon\sqrt{V_t}\,dW^V_t\),
+\[
+\color{gray}{\text{corrección de Milstein: }\quad \tfrac{\varepsilon^2}{4}\,\big((\Delta W_V)^2-\Delta\big),}
+\]
+así como los \(\color{gray}{\text{términos cruzados}}\;J_{XV}\) (áreas de Lévy). \textit{Orden fuerte} \(O(\Delta^{1/2})\), \textit{orden débil} \(O(\Delta)\).
+\end{frame}
+
+
+% =========================
+% Algoritmo: Euler (full truncation) — un paso
+% =========================
+\begin{frame}{Euler--Maruyama para Heston (simulate\_heston\_euler)}
+\small
+\textbf{Entradas: } \(S_0,\ V_0^*,\ r,\ \kappa,\ \theta,\ \sigma,\ \rho,\ T,\ N\).
+\quad Sea \(h=\tfrac{T}{N}\), \quad \(X_0=\log S_0\), \quad \(V_0=V_0^*\).
+
+\medskip
+\textbf{Genera} para cada paso un ruido gaussiano bidimensional
+\[
+Z_i=\begin{bmatrix} Z^{1}_i \\ Z^{2}_i \end{bmatrix}\sim \mathcal N\!\left(
+\begin{bmatrix}0\\[1pt]0\end{bmatrix},
+\begin{bmatrix}1&0\\[1pt]0&1\end{bmatrix}\right).
+\]
+
+\medskip
+\textbf{Para } \(i=0,1,\dots,N-1\) \textbf{hacer}
+\[
+\begin{aligned}
+& V_i^{+}=\max(V_i,0),\\[2pt]
+& X_{i+1}=X_i+\big(r-\tfrac12\,V_i^{+}\big)h+\sqrt{V_i^{+}}\,\sqrt{h}\,Z^{1}_i, \\[4pt]
+& V_{i+1}=V_i+\kappa(\theta - V_i^{+})h+\sigma\sqrt{V_i^{+}}\,\sqrt{h}\,\big(\rho\,Z^{1}_i+\sqrt{1-\rho^{2}}\,Z^{2}_i\big).
+\end{aligned}
+\]
+
+\medskip
+\textbf{Salida: } \(S_N=\exp(X_N)\).
+\end{frame}
+
+
+
+% =========================
+% Heston: Kahl–Jäckel (IM-IJK)
+% =========================
+\begin{frame}{Heston: Kahl--Jäckel (IM--IJK)}
+\[
+\begin{aligned}
+\ln \widehat X_{t+\Delta} &= \ln \widehat X_t - \frac{\Delta}{4}\!\left(\widehat V_{t+\Delta}+\widehat V_t\right)
++ \rho \sqrt{\widehat V_t}\,Z_V\sqrt{\Delta}\\
+&\quad + \frac12\!\left(\sqrt{\widehat V_{t+\Delta}}+\sqrt{\widehat V_t}\right)\!\left(Z_X\sqrt{\Delta}-\rho Z_V\sqrt{\Delta}\right)
++ \frac14\,\varepsilon\rho\,\Delta\,(Z_V^2-1),\\[4pt]
+\widehat V_{t+\Delta} &= \frac{\widehat V_t + \kappa\theta\,\Delta + \varepsilon\sqrt{\widehat V_t}\,Z_V\sqrt{\Delta}
++ \tfrac14\varepsilon^2\Delta\,(Z_V^2-1)}{1+\kappa\Delta}.
+\end{aligned}
+\]
+
+\end{frame}
+
+% =========================
+% Algoritmo: IM–IJK (un paso)
+% =========================
+\begin{frame}{Algoritmo de simulación}
+\small
+\begin{enumerate}
+  \item Dado \(\widehat X_t,\widehat V_t,\Delta\), genera \(U_1,U_2\sim\mathcal U(0,1)\) y construye
+        \(Z_V=\Phi^{-1}(U_1)\), \(\;Z_X=\rho Z_V+\sqrt{1-\rho^2}\,\Phi^{-1}(U_2)\). {\footnotesize\;(\(Z\) correlacionados).}
+  \item Actualiza la varianza con el \emph{Milstein implícito}):
+  \[
+  \widehat V_{t+\Delta}=\frac{\widehat V_t+\kappa\theta\,\Delta+\varepsilon\sqrt{\widehat V_t}\,Z_V\sqrt{\Delta}
+  +\tfrac14\varepsilon^2\Delta\,(Z_V^2-1)}{1+\kappa\Delta}.
+  \]
+  \item (Si \(4\kappa\theta\le\varepsilon^2\)) \textbf{Truncación}: si \(\widehat V_{t+\Delta}<0\),
+        reemplaza por el arreglo tipo (6)–(7): usa \(V^+=\max(\widehat V_{t+\Delta},0)\) y, en el término de drift,
+        procede como en “full truncation”.
+  \item Actualiza el log-precio con IJK (ec. (8)):
+  \[
+  \begin{aligned}
+  \ln \widehat X_{t+\Delta} &= \ln \widehat X_t - \frac{\Delta}{4}\!\left(\widehat V_{t+\Delta}+\widehat V_t\right)
+  + \rho \sqrt{\widehat V_t}\,Z_V\sqrt{\Delta}\\
+  &\quad + \frac12\!\left(\sqrt{\widehat V_{t+\Delta}}+\sqrt{\widehat V_t}\right)\!\left(Z_X\sqrt{\Delta}-\rho Z_V\sqrt{\Delta}\right)
+  + \frac14\,\varepsilon\rho\,\Delta\,(Z_V^2-1).
+  \end{aligned}
+  \]
+  \item Repite para el siguiente nodo temporal.
+\end{enumerate}
+\end{frame}
+
+
+
+% =========================
+% Heston: Broadie–Kaya (exacto)
+% =========================
+\begin{frame}{Heston: Broadie--Kaya}
+\small
+\textbf{1) Ley exacta de } \(V_{t+\Delta}\,|\,V_t\) (CIR):
+\[
+d=\frac{4\kappa\theta}{\varepsilon^2},\quad
+n(t,t+\Delta)=\frac{4\kappa e^{-\kappa\Delta}}{\varepsilon^2\left(1-e^{-\kappa\Delta}\right)}.
+\]
+Entonces
+\[
+V_{t+\Delta}\,|\,V_t \;\sim\; \frac{e^{-\kappa\Delta}}{n(t,t+\Delta)}\;
+\chi^2_{\text{no-centr.}}\!\big(d,\;\lambda=V_t\,n(t,t+\Delta)\big).
+\]
+
+\medskip
+\textbf{2) Identidad clave para acoplar \(X\) y \(V\):}
+\[
+\int_t^{t+\Delta}\!\!\sqrt{V(u)}\,dW_V(u)
+=\varepsilon^{-1}\Big(V_{t+\Delta}-V_t-\kappa\theta\Delta\Big)
++\varepsilon^{-1}\kappa\!\int_t^{t+\Delta}\!\!V(u)\,du.
+\]
+
+\medskip
+\textbf{3) Representación exacta de \(\ln X\):}
+\[
+\boxed{\;
+\begin{aligned}
+\ln X_{t+\Delta} &= \ln X_t
++ \frac{\rho}{\varepsilon}\big(V_{t+\Delta}-V_t-\kappa\theta\Delta\big)\\
+&\quad+\Big(\frac{\kappa\rho}{\varepsilon}-\tfrac12\Big)\!\int_t^{t+\Delta}\!V(u)\,du
++\sqrt{1-\rho^2}\int_t^{t+\Delta}\!\sqrt{V(u)}\,dW(u).
+\end{aligned}}
+\]
+\end{frame}
+
+\begin{frame}{Heston: Broadie--Kaya}
+\medskip
+\textbf{4) Condicionalmente Gaussiano:} dado \(V_{t+\Delta}\) y \(I\equiv\int_t^{t+\Delta}V(u)\,du\),
+\[
+\ln X_{t+\Delta}\,\big|\,V_{t+\Delta},I \;\sim\; \mathcal N\!\left(
+\mu,\;\sigma^2\right),
+\]
+\[
+\mu=\ln X_t+\frac{\rho}{\varepsilon}(V_{t+\Delta}-V_t-\kappa\theta\Delta)
++\Big(\frac{\kappa\rho}{\varepsilon}-\tfrac12\Big)I,\quad
+\sigma^2=(1-\rho^2)\,I.
+\]
+
+\medskip
+\textbf{5) Integrado de varianza:} la distribución condicional de \(I\) no está en cerrado; BK obtienen su \emph{función característica} y la \emph{invierten numéricamente} (Fourier) para muestrear \(I\).  
+\end{frame}
+
+
+% =========================
+% Algoritmo: Broadie–Kaya (un paso)
+% =========================
+\begin{frame}{Algoritmo de simulación}
+\small
+\begin{enumerate}
+  \item \textbf{Muestrea \(V_{t+\Delta}\,|\,V_t\):} usa la ley exacta del CIR (no central \(\chi^2\) escalada).
+  \item \textbf{Muestrea \(I=\int_t^{t+\Delta}\!V(u)\,du\,|\,V_t,V_{t+\Delta}\):} mediante \emph{inversión numérica} (Fourier) de la CDF obtenida a partir de su función característica. 
+  \item \textbf{Muestrea \(\ln X_{t+\Delta}\,|\,V_{t+\Delta},I\):} usa la normal condicional con
+  \[
+  \mu=\ln X_t+\tfrac{\rho}{\varepsilon}(V_{t+\Delta}-V_t-\kappa\theta\Delta)
+  +\Big(\tfrac{\kappa\rho}{\varepsilon}-\tfrac12\Big)I,\quad
+  \sigma^2=(1-\rho^2)I.
+  \]
+  \item \textbf{Repite} para el siguiente paso del mallado.
+\end{enumerate}
+
+\medskip
+\footnotesize\textbf{Comentarios prácticos:} el esquema es \emph{libre de sesgo}, pero la inversión de \(I\) implica Bessel modificadas (series infinitas) y requiere cuidado numérico; además, la aceptación--rechazo puede complicar el control de ruido en griegas bajo perturbaciones. 
+\end{frame}
+
+
+
+% =========================
+% Heston: TG (Truncated Gaussian) para V — Ecuaciones
+% =========================
+\begin{frame}{Heston: TG (Truncated Gaussian) para \(V\)}
+\[
+\widehat V_{t+\Delta} = (\mu + \sigma Z_V)^+,\qquad Z_V\sim\mathcal N(0,1).
+\]
+
+\small\textbf{Objetivo (moment matching):}\; 
+\(\mathbb E[\widehat V_{t+\Delta}\mid V_t]=m,\;\mathrm{Var}[\widehat V_{t+\Delta}\mid V_t]=s^2\),\\
+donde los momentos exactos del CIR son
+\[
+m=\theta+(V_t-\theta)\,e^{-\kappa\Delta},\quad
+s^2=V_t\,\frac{\varepsilon^2}{\kappa}\!\left(e^{-\kappa\Delta}-e^{-2\kappa\Delta}\right)
++\theta\,\frac{\varepsilon^2}{2\kappa}\!\left(1-e^{-\kappa\Delta}\right)^{\!2}.
+\]
+
+\small\textbf{Momentos de la Gaussiana truncada (paper):}
+\[
+\mathbb E[(\mu+\sigma Z)^+]=\mu\,\Phi(\tfrac{\mu}{\sigma})+\sigma\,\phi(\tfrac{\mu}{\sigma}),\quad
+\mathbb E[((\mu+\sigma Z)^+)^2]=\mathbb E[(\mu+\sigma Z)^+]\mu+\sigma^2\Phi(\tfrac{\mu}{\sigma}),
+\]
+y con \(\psi=s^2/m^2\) el paper da una parametrización eficiente:
+\[
+\mu=\frac{m}{\dfrac{\phi(r(\psi))}{r(\psi)}+\Phi(r(\psi))},\qquad
+\sigma=\frac{m}{\phi(r(\psi))+r(\psi)\,\Phi(r(\psi))}.
+\]
+
+
+\end{frame}
+
+% =========================
+% Algoritmo: TG (un paso)
+% =========================
+\begin{frame}{Algoritmo de simulación (un paso) — TG}
+\small
+\begin{enumerate}
+  \item \textbf{Momentos exactos del CIR:} dados \(V_t\) y \(\Delta\), calcula
+  \[
+  m=\theta+(V_t-\theta)e^{-\kappa\Delta},\quad
+  s^2=V_t\,\frac{\varepsilon^2}{\kappa}\!\left(e^{-\kappa\Delta}-e^{-2\kappa\Delta}\right)
+  +\theta\,\frac{\varepsilon^2}{2\kappa}\!\left(1-e^{-\kappa\Delta}\right)^{2}.
+  \]
+  \item \textbf{Define} \(\psi=s^2/m^2\) y computa \(r(\psi)\) (definición del paper).
+  \[
+  r(\psi)\ \text{tal que}\;\; \frac{r\,\phi(r)+\Phi(r)}{\left[\phi(r)+r\,\Phi(r)\right]^2}=\frac{1+\psi}{2(1+r)}.
+  \]
+  \item \textbf{Obtén} \(\mu,\sigma\) con (14):
+  \[
+  \mu=\frac{m}{\dfrac{\phi(r)}{r}+\Phi(r)},\qquad
+  \sigma=\frac{m}{\phi(r)+r\,\Phi(r)}.
+  \]
+  \item \textbf{Genera} \(Z_V\sim\mathcal N(0,1)\) y fija \(\widehat V_{t+\Delta}=(\mu+\sigma Z_V)^+\).
+  \item \textbf{(Para \(X\))} usa el esquema de \(\ln X\) basado en (11) con la regla de integral \(\Delta(\gamma_1 V_t+\gamma_2 V_{t+\Delta})\) para mantener la correlación correcta. 
+\end{enumerate}
+
+\end{frame}
+
+
+% =========================
+% Algoritmo: QE (un paso)
+% =========================
+\begin{frame}{Algoritmo de simulación (un paso) — QE}
+\small
+\textbf{Entrada:} \(V_t\), \(\Delta\), parámetros \(\kappa,\theta,\varepsilon\), umbral \(\psi_c\in[1,2]\).\\[2pt]
+\textbf{1. Momentos exactos del CIR} (en \([t,t+\Delta]\)):
+\[
+m=\theta+(V_t-\theta)e^{-\kappa\Delta},\quad
+s^2=V_t\frac{\varepsilon^2}{\kappa}\big(e^{-\kappa\Delta}-e^{-2\kappa\Delta}\big)
++\theta\frac{\varepsilon^2}{2\kappa}\big(1-e^{-\kappa\Delta}\big)^2.
+\]
+\vspace{2pt}
+
+\textbf{2. Calcula} \(\psi=s^2/m^2\). \;
+
+\textbf{3. Genera} \(U_V\sim\mathcal U(0,1)\). \;
+
+\textbf{4. Si } \(\psi\le\psi_c\) \textbf{(régimen cuadrático):}
+\[
+\text{calcula } b^2=2\psi^{-1}-1+\sqrt{(2\psi^{-1})\big(2\psi^{-1}-1\big)},\quad
+a=\frac{m}{1+b^2};
+\]
+toma \(Z_V=\Phi^{-1}(U_V)\) y \(\boxed{V_{t+\Delta}=a\,(b+Z_V)^2}\).
+\end{frame}
+
+% ========================= % Heston: QE (Quadratic–Exponential) para V % ========================= 
+
+\begin{frame}{Heston: QE (Quadratic--Exponential) para \(V\)} \small Sea \(\psi = s^2/m^2\). 
+\begin{itemize} \item \textbf{Régimen cuadrático} (\(\psi \le \psi_c\)): \(\;\widehat V_{t+\Delta}=a\,(b+Z_V)^2,\; Z_V\sim\mathcal N(0,1)\). \item \textbf{Régimen exponencial} (\(\psi > \psi_c\)): ley mixta con masa en 0 y cola exponencial \(\Rightarrow\) \[ \widehat V_{t+\Delta}=\Psi^{-1}(U;\,p,\beta),\quad \Psi^{-1}(u)=\begin{cases} 0, & 0\le u\le p,\\ \beta^{-1}\ln\!\frac{1-p}{1-u}, & p<u\le 1. \end{cases} \] 
+\end{itemize} 
+\end{frame}
+
+
+
+\begin{frame}{Algoritmo de simulación (un paso) — QE}
+
+\textbf{5. Si } \(\psi>\psi_c\) \textbf{(régimen exponencial):}
+calcula $p$,$\beta$ por moment matching y usa
+\[
+\Psi^{-1}(u;p,\beta)=
+\begin{cases}
+0,& 0\le u\le p,\\
+\beta^{-1}\ln\frac{1-p}{1-u},& p<u\le1,
+\end{cases}
+\]
+luego \(\boxed{V_{t+\Delta}=\Psi^{-1}(U_V;p,\beta)}\).\
+
+\textbf{6. (Para \(X\))} actualiza \(\ln X\) con el esquema (33) condicionando en \(V_t,V_{t+\Delta}\) 
+y usando central (\(\gamma_1=\gamma_2=1/2\)).
+\end{frame}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+\begin{frame}
+\begin{center}
+	Gracias    
+\end{center}
+\end{frame}
+
+\end{document}
