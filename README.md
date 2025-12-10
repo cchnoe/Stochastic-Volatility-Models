@@ -1,4 +1,4 @@
-# Student Research Group "Stochastic Volatility Models"
+# DLFM Research - "Stochastic Volatility Models"
 
 1. Report: a review of Heston numerical simulations
 
